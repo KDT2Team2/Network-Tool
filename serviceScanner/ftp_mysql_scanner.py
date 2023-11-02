@@ -76,7 +76,7 @@ def main_start():
     load_start_ascii()
     host, port_list = port_check()
     for i in port_list:
-        if i == 21:
+        if i == 20:
             ftp_flag = ftp_check(host, i)
         elif i == 3306:
             mysql_flag = mysql_check(host, i)
