@@ -23,7 +23,7 @@ def load_start_ascii():
 
 def port_scan(host,ports):
     pkt = IP(dst=host)/TCP(dport=ports,flags="S")                       
-    ans, unans = sr(pkt,verbose=0,timeout=1)
+    ans, unans = sr(pkt,verbose=0,timeout=10)
     alive_ports = []
     for (s,r) in ans:
         if(r[TCP].flags == "SA"):
@@ -51,13 +51,13 @@ def port_check():
         for future in as_completed(futures):
             alive_ports+=future.result()
     end_time = datetime.now()
-    print(f"⌛ Took {end_time-start_time} seconds")
+    print(f"Took {end_time-start_time} seconds")
     return host, alive_ports
 
 # smtp scan
 def check_smtp(ip, port):
     try:
-        s = socket.create_connection((ip, port), timeout=1)
+        s = socket.create_connection((ip, port), timeout=2)
         initial_response = s.recv(1024)
         if not b"220" in initial_response:
             s.close()
@@ -77,7 +77,7 @@ def check_smtp(ip, port):
 # ssh scan
 def check_ssh(ip, port):
     try:
-        s = socket.create_connection((ip, port), timeout=1)
+        s = socket.create_connection((ip, port), timeout=2)
         response = s.recv(1024)
         s.close()
 
@@ -92,35 +92,32 @@ def check_ssh(ip, port):
 def check_ftp(ip, port):
     try:
         with FTP() as ftp:
-            ftp.connect(host=ip, port=port, timeout=1)
+            ftp.connect(host=ip, port=port, timeout=10)
             welcome_message = ftp.getwelcome()
             print(welcome_message)
                 
             #정상적인 접속이 될 경우 welcom messaage에 220 ProFTP  ~ 버전 출력됨 
             if '220' in welcome_message:
                 ftp_flag = True
-    except Error as e:
+    except Exception as e:
         print(f"[-] FTP 서비스 연결 중 에러 발생: {e}")
         ftp_flag = False
     return ftp_flag
 
 # http scan
 def check_http(ip, port):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect((ip, port))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(2)
+    s.connect((ip, port))
 
-        http_request = "GET / HTTP/1.1\r\nHost: {}\r\n\r\n".format(ip)
-        s.sendall(http_request.encode())
+    http_request = "GET / HTTP/1.1\r\nHost: {}\r\n\r\n".format(ip)
+    s.sendall(http_request.encode())
 
-        response = s.recv(4096).decode('utf-8')
+    response = s.recv(4096).decode('utf-8')
 
-        if "HTTP/1." in response:
-            return True
-        else:
-            return False
-    except:
+    if "HTTP/1." in response:
+        return True
+    else:
         return False
 
 # dhcp scan
@@ -132,19 +129,17 @@ def check_dhcp(ip, port, iface="eth0"):
         BOOTP(chaddr=b"\x00\x01\x02\x03\x04\x05") /
         DHCP(options=[("message-type", "discover"), "end"])
     )
-    try:
-        response = srp1(dhcp_discover, timeout=1, verbose=0, iface=iface)
 
-        if response and DHCP in response and response[DHCP].options[0][1] == 2:
-            return True
-        return False
-    except:
-        return False
+    response = srp1(dhcp_discover, timeout=2, verbose=0, iface=iface)
+
+    if response and DHCP in response and response[DHCP].options[0][1] == 2:
+        return True
+    return False
 
 # telnet scan
 def check_telnet(ip,port):
     try:
-        tn = telnetlib.Telnet(host=ip,port=port,timeout=1)
+        tn = telnetlib.Telnet(host=ip,port=port,timeout=2)
         tn.close()
         return True
     except:
@@ -169,24 +164,20 @@ def check_sql(ip, port):
         connection = mysql.connector.connect(
             host=ip,
             port=port,
-            connection_timeout=1
+            connection_timeout=10
         )
         if connection.is_connected():
-            mysql_flag = True
+            connection.close()
+            return True
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print(f"[-] My SQL 접근권한이 없음")
-            mysql_flag = True
+            return True
         
         # 
-    except Exception as e:
+    except Error as e:
         print(f"[-] My SQL 서비스 연결 중 에러 발생: {e}")
-        mysql_flag = False
-    
-    # 연결 해제 후 mysql_flag return
-    if connection.is_connected():
-                connection.close()
-    return mysql_flag
+        return False
 
 def service_scan(ip,port):
     scanner_function_map ={
@@ -216,4 +207,4 @@ if __name__ == "__main__":
     host, alive_ports = port_check()
 
     for port in alive_ports:
-        service_scan(host,port)
+       service_scan(host,port)
