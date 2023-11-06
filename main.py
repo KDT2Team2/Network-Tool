@@ -51,7 +51,7 @@ def port_check():
         for future in as_completed(futures):
             alive_ports+=future.result()
     end_time = datetime.now()
-    print(f"Took {end_time-start_time} seconds")
+    print(f"⌛ Took {end_time-start_time} seconds")
     return host, alive_ports
 
 # smtp scan
