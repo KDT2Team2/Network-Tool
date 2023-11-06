@@ -10,7 +10,9 @@ import dns.flags
 import dns.rdatatype
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import as_completed
+from mysql.connector import errorcode
 import os
+import mysql.connector
 
 # show ascii art
 def load_start_ascii():
@@ -157,8 +159,29 @@ def check_dns(ip,port):
         return False
 
 # sql scan
-def check_sql(ip,port):
-    print("check_sql")
+def mysql_check(ip, port):
+    try:
+        connection = mysql.connector.connect(
+            host=ip,
+            port=port,
+            connection_timeout=10
+        )
+        if connection.is_connected():
+            mysql_flag = True
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print(f"[-] My SQL 접근권한이 없음")
+            mysql_flag = True
+        
+        # 
+    except Error as e:
+        print(f"[-] My SQL 서비스 연결 중 에러 발생: {e}")
+        mysql_flag = False
+    
+    # 연결 해제 후 mysql_flag return
+    if connection.is_connected():
+                connection.close()
+    return mysql_flag
 
 def service_scan(ip,port):
     scanner_function_map ={
