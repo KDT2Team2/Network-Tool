@@ -2,6 +2,7 @@ from pyfiglet import Figlet
 from datetime import datetime
 from scapy.all import *
 from ftplib import FTP
+import mysql.connector
 import socket
 
 conf.use_pcap = True
@@ -41,47 +42,47 @@ def ftp_check(ip, port):
                 
                 #정상적인 접속이 될 경우 welcom messaage에 220 ProFTP  ~ 버전 출력됨 
                 if '220' in welcome_message:
-                    ftp_flag = True
-        except Error as e:
+                    return  True
+        except Exception as e:
             print(f"[-] FTP 서비스 연결 중 에러 발생: {e}")
-            ftp_flag = False
+            return False
     else:
         print("[+] Port is not FTP Port")
-    return ftp_flag
+        return False
 
 def mysql_check(ip, port):
+    connection = None
     if port == 3306:
         try:
-        connection = mysql.connector.connect(
-            host=ip,
-            port=port,
-            connection_timeout=10
-        )
-        if connection.is_connected():
-            mysql_flag = True
-    except Error as e:
-        print(f"[-] My SQL 서비스 연결 중 에러 발생: {e}")
-        mysql_flag = False
-    
-    # 포트 번호가 정확하지 않을 경우
+            connection = mysql.connector.connect(
+                host=ip,
+                port=port,
+                connection_timeout=1000
+            )
+            if connection.is_connected():
+                return True
+        except Exception as e:
+            print(f"[-] MySQL 서비스 연결 중 에러 발생: {e}")
+            return False
+        finally:
+            if connection is not None and connection.is_connected():
+                connection.close()
     else:
         print("[+] Port is not MySQL Port")
-    
-    # 연결 해제 후 mysql_flag return
-    if connection.is_connected():
-                connection.close()
-    return mysql_flag
+        return False
+
+
 
 def main_start():
     load_start_ascii()
     host, port_list = port_check()
     for i in port_list:
-        if i == 20:
+        if i == 21:
             ftp_flag = ftp_check(host, i)
         elif i == 3306:
             mysql_flag = mysql_check(host, i)
     
 if __name__ == "__main__":
     # load_start_ascii()
-    # port_check()
-    print(ftp_check("185.5.226.64", 21))
+    # host, port_list = port_check()
+    print(mysql_check("210.246.245.200", 3306))
