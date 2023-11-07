@@ -106,18 +106,21 @@ def check_ftp(ip, port):
 
 # http scan
 def check_http(ip, port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(2)
-    s.connect((ip, port))
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect((ip, port))
 
-    http_request = "GET / HTTP/1.1\r\nHost: {}\r\n\r\n".format(ip)
-    s.sendall(http_request.encode())
+        http_request = "GET / HTTP/1.1\r\nHost: {}\r\n\r\n".format(ip)
+        s.sendall(http_request.encode())
 
-    response = s.recv(4096).decode('utf-8')
+        response = s.recv(4096).decode('utf-8')
 
-    if "HTTP/1." in response:
-        return True
-    else:
+        if "HTTP/1." in response:
+            return True
+        else:
+            return False
+    except:
         return False
 
 # dhcp scan
@@ -129,13 +132,14 @@ def check_dhcp(ip, port, iface="eth0"):
         BOOTP(chaddr=b"\x00\x01\x02\x03\x04\x05") /
         DHCP(options=[("message-type", "discover"), "end"])
     )
+    try:
+        response = srp1(dhcp_discover, timeout=1, verbose=0, iface=iface)
 
-    response = srp1(dhcp_discover, timeout=2, verbose=0, iface=iface)
-
-    if response and DHCP in response and response[DHCP].options[0][1] == 2:
-        return True
-    return False
-
+        if response and DHCP in response and response[DHCP].options[0][1] == 2:
+            return True
+        return False
+    except:
+        return False
 # telnet scan
 def check_telnet(ip,port):
     try:
