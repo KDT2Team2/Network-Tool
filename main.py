@@ -143,11 +143,17 @@ def check_dhcp(ip, port, iface="eth0"):
 # telnet scan
 def check_telnet(ip,port):
     try:
-        tn = telnetlib.Telnet(host=ip,port=port,timeout=2)
+        tn = telnetlib.Telnet(host=ip,port=port,timeout=1)
+        res = tn.read_some()
         tn.close()
+        if res is None:
+            return False
         return True
-    except:
-        return False       
+    except ConnectionRefusedError:
+        return False
+    except Exception as e:
+        #print(f"{e}")
+        return False
 
 # dns scan
 def check_dns(ip,port):
