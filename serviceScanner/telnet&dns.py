@@ -10,11 +10,14 @@ import dns.rdatatype
 def check_telnet(ip,port):
     try:
         tn = telnetlib.Telnet(host=ip,port=port,timeout=2)
-        tn.close()
+        res = tn.expect([b"(?i)((login)|(username)|(id)|(account)|(password))"],timeout=3)
+        print(res[0])
+        if res is None:
+            return False
         print("running telnet")
         return True
-    except:
-        print("error")
+    except Exception as e:
+        print(e)
         return False
         
 # dns scan : dns query를 보냈을 때 시간안에 응답이 돌아오는지로 판단
@@ -30,5 +33,5 @@ def check_dns(ip,port):
     except:
         return False
 # test code
-#check_telnet("189.114.92.121",23) 
+check_telnet("189.114.92.121",23)
 #check_dns("8.8.8.8",53)

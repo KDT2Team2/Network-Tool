@@ -94,13 +94,13 @@ def check_ftp(ip, port):
         with FTP() as ftp:
             ftp.connect(host=ip, port=port, timeout=10)
             welcome_message = ftp.getwelcome()
-            print(welcome_message)
+            #print(welcome_message)
                 
             #정상적인 접속이 될 경우 welcom messaage에 220 ProFTP  ~ 버전 출력됨 
             if '220' in welcome_message:
                 ftp_flag = True
     except Exception as e:
-        print(f"[-] FTP 서비스 연결 중 에러 발생: {e}")
+        #print(f"[-] FTP 서비스 연결 중 에러 발생: {e}")
         ftp_flag = False
     return ftp_flag
 
@@ -144,9 +144,8 @@ def check_dhcp(ip, port, iface="eth0"):
 def check_telnet(ip,port):
     try:
         tn = telnetlib.Telnet(host=ip,port=port,timeout=1)
-        res = tn.read_some()
-        tn.close()
-        if res is None:
+        res = tn.expect([b"(?i)((login)|(username)|(id)|(account)|(password))"],timeout=3)
+        if res[0] == -1:
             return False
         return True
     except ConnectionRefusedError:
